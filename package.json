@@ -1,22 +1,67 @@
 {
-  "name": "sonarqube-dash",
+  "name": "@kud/sonarqube-cli",
   "version": "0.2.0",
-  "description": "A CLI tool to query SonarQube dashboard from the terminal",
-  "main": "bin/sonarqube-dash.js",
-  "bin": {
-    "sonarqube-dash": "./bin/sonarqube-dash.js"
+  "description": "SonarQube from the terminal: quality gate, metrics, issues, hotspots and rules, with an interactive issues dashboard.",
+  "type": "module",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/src/index.js",
+      "types": "./dist/src/index.d.ts"
+    }
   },
+  "bin": {
+    "sonarqube": "dist/bin/sonarqube.js",
+    "sonarqube-dash": "dist/bin/sonarqube.js"
+  },
+  "files": [
+    "dist/bin",
+    "dist/src"
+  ],
   "scripts": {
-    "start": "node bin/sonarqube-dash.js"
+    "build": "tsc -p .",
+    "dev": "tsx bin/sonarqube.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test 'test/**/*.test.ts'",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "sonarqube",
+    "sonar",
+    "quality-gate",
+    "code-quality",
+    "cli",
+    "tui",
+    "terminal",
+    "issues",
+    "static-analysis"
+  ],
+  "author": "Erwann Mest <m@kud.io>",
+  "license": "MIT",
+  "homepage": "https://github.com/kud/sonarqube-cli",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kud/sonarqube-cli"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
   },
   "dependencies": {
-    "axios": "1.11.0",
-    "chalk": "5.6.0",
-    "commander": "14.0.0",
+    "@kud/sonarqube": "^0.1.0",
+    "blessed": "0.1.81",
+    "chalk": "5.6.2",
     "cli-highlight": "2.1.11",
-    "blessed": "0.1.81"
+    "commander": "14.0.0"
   },
-  "type": "module",
-  "author": "Erwann Mest",
-  "license": "MIT"
+  "devDependencies": {
+    "@types/blessed": "0.1.27",
+    "@types/node": "24.3.1",
+    "tsx": "4.20.5",
+    "typescript": "5.9.2"
+  }
 }
