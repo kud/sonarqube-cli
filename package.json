@@ -1,6 +1,6 @@
 {
   "name": "@kud/sonarqube-cli",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "SonarQube from the terminal: quality gate, metrics, issues, hotspots and rules, with an interactive issues dashboard.",
   "type": "module",
   "main": "dist/src/index.js",
