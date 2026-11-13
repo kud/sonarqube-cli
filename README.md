@@ -1,8 +1,32 @@
-# @kud/sonarqube-cli
+<div align="center">
 
-> SonarQube from the terminal: why the quality gate is red, metrics, issues, hotspots and rules, plus an interactive issues dashboard.
+<img src="assets/icon.svg" width="128" alt="SonarQube CLI icon" />
 
-Built on [`@kud/sonarqube`](https://github.com/kud/sonarqube), the headless core that holds the client, the layered config and the quality-gate model.
+🚦
+
+# SonarQube CLI
+
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-339933?style=flat-square&logo=node.js&logoColor=white)
+![npm](https://img.shields.io/npm/v/%40kud%2Fsonarqube-cli?style=flat-square&color=CB3837)
+![MIT](https://img.shields.io/badge/licence-MIT-22C55E?style=flat-square)
+
+**A fast, focused CLI & TUI for SonarQube metrics, quality gates, issues and code snippets — with branch awareness and zero config friction.**
+
+<a href="https://kud.io/projects/sonarqube-cli">Website</a> · <a href="https://kud.io/projects/sonarqube-cli/docs">Documentation</a>
+
+</div>
+
+## Features
+
+SonarQube from the terminal: why the quality gate is red, metrics, issues, hotspots and rules, plus an interactive issues dashboard. Built on [`@kud/sonarqube`](https://github.com/kud/sonarqube), the headless core that holds the client, the layered config and the quality-gate model.
+
+- **Quality gate, explained** — status, new-code period and failing conditions first, with `--fail` to break a CI step
+- **Issues dashboard** — list, detail and a highlighted code snippet in one TUI, with `b` to switch branch and keep your filters
+- **Everything else in reach** — metrics, measures and their history, hotspots, rules, duplications, quality profiles
+- **Branch aware** — `-b` on every command that talks to SonarQube
+- **Layered config** — config file, then environment, then flags, with `sonar-project.properties` as a fallback for the project key
+- **Scriptable** — `--json` on every command that talks to SonarQube
 
 ## Install
 
@@ -12,7 +36,7 @@ npm install -g @kud/sonarqube-cli
 
 Two binaries, same program: `sonarqube` and `sonarqube-dash` (kept for existing scripts). Node 22 or later.
 
-## Quick start
+## Usage
 
 ```bash
 export SONARQUBE_DASH_HOST=https://sonarqube.example.com
@@ -106,7 +130,9 @@ sonarqube config show
 
 ## Development
 
-```bash
+```sh
+git clone https://github.com/kud/sonarqube-cli.git
+cd sonarqube-cli
 npm install
 npm run typecheck
 npm test
@@ -116,3 +142,5 @@ npm run build
 ## Licence
 
 MIT
+
+📚 **Full documentation → [sonarqube-cli/docs](https://kud.io/projects/sonarqube-cli/docs)**
