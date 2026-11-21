@@ -5,7 +5,6 @@ import { fileURLToPath } from "node:url"
 import chalk from "chalk"
 import { Command } from "commander"
 import {
-  configFilePath,
   readConfigFile,
   redactConfig,
   writeConfig,
@@ -25,6 +24,7 @@ import {
   requireProject,
   resolveConfigPath,
 } from "../src/runtime.js"
+import { configFilePath, existingConfigFilePath } from "../src/settings.js"
 import {
   printComponentTree,
   printDuplications,
@@ -570,8 +570,9 @@ const configCommand = program
   .description("Manage configuration file values")
   .option("-c, --config <path>", "Path to config file (overrides default)")
 
+/** The file read: --config, else ~/.config/sonarqube, else the legacy directory. */
 const configFile = (command: Command) =>
-  resolveConfigPath(command.parent?.opts().config) ?? configFilePath()
+  resolveConfigPath(command.parent?.opts().config) ?? existingConfigFilePath()
 
 configCommand
   .command("set")
@@ -588,7 +589,13 @@ configCommand
             throw new CliError(`Invalid format (expected key=value): ${pair}`)
           updates[pair.slice(0, idx)] = pair.slice(idx + 1)
         }
-        console.log(`Updated ${writeConfig(updates, configFile(command)).path}`)
+        // Writes always land in the new location; legacy values carry over.
+        const explicit = resolveConfigPath(command.parent?.opts().config)
+        const source = configFile(command)
+        const target = explicit ?? configFilePath()
+        const data =
+          source === target ? updates : { ...readConfigFile(source), ...updates }
+        console.log(`Updated ${writeConfig(data, target).path}`)
       },
     ),
   )

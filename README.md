@@ -39,9 +39,9 @@ Two binaries, same program: `sonarqube` and `sonarqube-dash` (kept for existing 
 ## Usage
 
 ```bash
-export SONARQUBE_DASH_HOST=https://sonarqube.example.com
-export SONARQUBE_DASH_TOKEN=<token>
-export SONARQUBE_DASH_PROJECT=my-project
+export SONARQUBE_HOST=https://sonarqube.example.com
+export SONARQUBE_TOKEN=<token>
+export SONARQUBE_PROJECT=my-project
 
 sonarqube                         # open the issues dashboard
 sonarqube quality-gate            # why is the gate red
@@ -114,14 +114,14 @@ Each issue shows its author (the part before `@`) and creation date as `YYYY-MM-
 
 Layers, each overriding the last: config file, environment, flags. Without a project key anywhere, `sonar.projectKey` is read from `sonar-project.properties` in the current directory. There is no default host.
 
-| Setting | Environment (first set wins)                             | File key  |
-| ------- | -------------------------------------------------------- | --------- |
-| host    | `SONARQUBE_DASH_HOST`, `SONAR_HOST_URL`                  | `host`    |
-| token   | `SONARQUBE_DASH_TOKEN`, `SONARQUBE_TOKEN`, `SONAR_TOKEN` | `token`   |
-| project | `SONARQUBE_DASH_PROJECT`                                 | `project` |
-| branch  | `SONARQUBE_DASH_BRANCH`                                  | `branch`  |
+| Setting | Environment         | File key  |
+| ------- | ------------------- | --------- |
+| host    | `SONARQUBE_HOST`    | `host`    |
+| token   | `SONARQUBE_TOKEN`   | `token`   |
+| project | `SONARQUBE_PROJECT` | `project` |
+| branch  | `SONARQUBE_BRANCH`  | `branch`  |
 
-The file lives at `$XDG_CONFIG_HOME/sonarqube-dash-cli/config.json` (default `~/.config/sonarqube-dash-cli/config.json`):
+The file lives at `$XDG_CONFIG_HOME/sonarqube/config.json` (default `~/.config/sonarqube/config.json`):
 
 ```bash
 sonarqube config set host=https://sonarqube.example.com token=abc project=my-project

@@ -23,7 +23,8 @@ const makeHome = () => {
   return {
     home,
     xdg,
-    configFile: path.join(xdg, "sonarqube-dash-cli", "config.json"),
+    configFile: path.join(xdg, "sonarqube", "config.json"),
+    legacyConfigFile: path.join(xdg, "sonarqube-dash-cli", "config.json"),
   }
 }
 
@@ -131,13 +132,122 @@ test("an unknown command is an error", async () => {
   assert.match(result.stderr, /unknown command 'nope'/)
 })
 
-test("missing host names --host, the env vars and config set", async () => {
+test("missing host names --host, SONARQUBE_HOST and config set, never a legacy name", async () => {
   const result = await run(["quality-gate", "-p", "my-project"])
   assert.equal(result.code, 1)
   assert.match(result.stderr, /--host/)
-  assert.match(result.stderr, /SONARQUBE_DASH_HOST/)
-  assert.match(result.stderr, /SONAR_HOST_URL/)
+  assert.match(result.stderr, /SONARQUBE_HOST/)
   assert.match(result.stderr, /config set/)
+  assert.doesNotMatch(result.stderr, /SONARQUBE_DASH_|SONAR_HOST_URL/)
+})
+
+test("missing project names SONARQUBE_PROJECT only", async () => {
+  const result = await run(["quality-gate", "-H", "http://127.0.0.1:9"])
+  assert.equal(result.code, 1)
+  assert.match(result.stderr, /SONARQUBE_PROJECT/)
+  assert.doesNotMatch(result.stderr, /SONARQUBE_DASH_/)
+})
+
+test("env precedence: new names win over legacy ones", async () => {
+  const result = await run(["print-config"], {
+    env: {
+      SONARQUBE_HOST: "https://new.example.com",
+      SONARQUBE_DASH_HOST: "https://dash.example.com",
+      SONAR_HOST_URL: "https://scanner.example.com",
+      SONARQUBE_PROJECT: "new-project",
+      SONARQUBE_DASH_PROJECT: "dash-project",
+      SONARQUBE_BRANCH: "new-branch",
+      SONARQUBE_DASH_BRANCH: "dash-branch",
+    },
+  })
+  assert.equal(result.code, 0, result.stderr)
+  assert.deepEqual(JSON.parse(result.stdout), {
+    host: "https://new.example.com",
+    project: "new-project",
+    branch: "new-branch",
+  })
+})
+
+test("env fallbacks: legacy names still work, in order", async () => {
+  const dash = await run(["print-config"], {
+    env: {
+      SONARQUBE_DASH_HOST: "https://dash.example.com",
+      SONAR_HOST_URL: "https://scanner.example.com",
+      SONARQUBE_DASH_PROJECT: "dash-project",
+      SONARQUBE_DASH_BRANCH: "dash-branch",
+    },
+  })
+  assert.deepEqual(JSON.parse(dash.stdout), {
+    host: "https://dash.example.com",
+    project: "dash-project",
+    branch: "dash-branch",
+  })
+  const scanner = await run(["print-config", "-p", "p"], {
+    env: { SONAR_HOST_URL: "https://scanner.example.com" },
+  })
+  assert.equal(JSON.parse(scanner.stdout).host, "https://scanner.example.com")
+})
+
+test("token precedence: SONARQUBE_TOKEN, then SONAR_TOKEN, then SONARQUBE_DASH_TOKEN", async () => {
+  const sent = async (env: Record<string, string>) => {
+    let credentials = ""
+    await withFake(
+      () => ({ body: { projectStatus: { status: "OK", conditions: [] } } }),
+      async (fake) => {
+        const result = await run(["quality-gate", "-p", "p", "-H", fake.host], {
+          env,
+        })
+        assert.equal(result.code, 0, result.stderr)
+        const auth = fake.requests[0].authorization ?? ""
+        credentials = Buffer.from(auth.replace("Basic ", ""), "base64").toString()
+      },
+    )
+    return credentials
+  }
+  const all = { SONARQUBE_TOKEN: "a", SONAR_TOKEN: "b", SONARQUBE_DASH_TOKEN: "c" }
+  assert.equal(await sent(all), "a:")
+  assert.equal(await sent({ SONAR_TOKEN: "b", SONARQUBE_DASH_TOKEN: "c" }), "b:")
+  assert.equal(await sent({ SONARQUBE_DASH_TOKEN: "c" }), "c:")
+})
+
+test("a 401 names the token variable that was used", async () => {
+  await withFake(
+    () => ({ status: 401, body: {} }),
+    async (fake) => {
+      const fromEnv = await run(["quality-gate", "-p", "p", "-H", fake.host], {
+        env: { SONAR_TOKEN: "bad" },
+      })
+      assert.equal(fromEnv.code, 1)
+      assert.match(fromEnv.stderr, /Set SONAR_TOKEN to a valid user token/)
+      const none = await run(["quality-gate", "-p", "p", "-H", fake.host])
+      assert.match(none.stderr, /Set SONARQUBE_TOKEN/)
+      assert.doesNotMatch(none.stderr, /SONARQUBE_DASH_/)
+    },
+  )
+})
+
+test("legacy config dir is read when the new one is absent", async () => {
+  const home = makeHome()
+  fs.mkdirSync(path.dirname(home.legacyConfigFile), { recursive: true })
+  fs.writeFileSync(
+    home.legacyConfigFile,
+    JSON.stringify({ host: "https://legacy.example.com", project: "legacy" }),
+  )
+  const legacy = await run(["print-config"], { home })
+  assert.deepEqual(JSON.parse(legacy.stdout), {
+    host: "https://legacy.example.com",
+    project: "legacy",
+  })
+  const set = await run(["config", "set", "branch=main"], { home })
+  assert.equal(set.code, 0, set.stderr)
+  assert.deepEqual(JSON.parse(fs.readFileSync(home.configFile, "utf8")), {
+    host: "https://legacy.example.com",
+    project: "legacy",
+    branch: "main",
+  })
+  fs.writeFileSync(home.configFile, JSON.stringify({ project: "new" }))
+  const current = await run(["print-config"], { home })
+  assert.deepEqual(JSON.parse(current.stdout), { project: "new" })
 })
 
 test("print-config keeps file values, layers env over them and redacts the token", async () => {
@@ -469,7 +579,7 @@ test("an HTTP 401 is one readable line with a token hint", async () => {
       ])
       assert.equal(result.code, 1)
       assert.match(result.stderr, /HTTP 401/)
-      assert.match(result.stderr, /Check the token/)
+      assert.match(result.stderr, /--token was rejected/)
       assert.doesNotMatch(result.stderr, /bad-token/)
     },
   )
